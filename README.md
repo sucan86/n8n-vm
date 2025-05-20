@@ -128,7 +128,7 @@ docker compose stop -d
 ```
 
 
-## 4. n8n inbetriebnehmen
+## 4. Inbetriebnehmen von n8n
 
 n8n sollte nun unter
 - URL: https://n8n.deinedomaine.de (http://< Deine-IP >:5678)
