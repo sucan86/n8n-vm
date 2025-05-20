@@ -1,139 +1,179 @@
+
 # Einrichtung von n8n auf einer HsH-VM (Ubuntu)
 
-Der folgende Einleitung soll das Einrichten von n8n und weiteren Diensten wie. u.a. Portainer für HsH-VMs erleitern. Für die VMs sind nur beschränkte Ports offen und müssen daher mittels eines Reverse Proxy (NGINX Proxy Manager) angepasst werden, sodass auch alle Dienste nach außen über HTTPS (Port 443) erreichbar sind.
+Diese Anleitung beschreibt die Einrichtung von n8n sowie weiterer Dienste wie z. B. Portainer auf einer HsH-VM. Da auf den VMs nur beschränkt Ports freigegeben sind, müssen die Dienste über einen Reverse Proxy (NGINX Proxy Manager) so konfiguriert werden, dass sie von außen über HTTPS (Port 443) erreichbar sind.
 
+---
 
 ## 1. Systemupdate durchführen und Docker installieren
 
-Den Inhalt der **setup.sh** in eine Datei speichern
+Den folgenden Inhalt in eine Datei mit dem Namen **setup.sh** speichern:
 
 ```bash
 nano setup.sh
 ```
 
-und anschließend ausführbar machen.
+Anschließend ausführbar machen:
 
 ```bash
 sudo chmod +x setup.sh
 ```
 
-Abschließend lässt sich das Script kopieren
+Das Script lässt sich nun wie folgt ausführen:
 
 ```bash
- ./setup.sh 
- ```
+./setup.sh
+```
 
-Starte danach ggf. einmal neu oder führe newgrp docker aus, damit die Docker-Gruppe sofort wirksam wird.
+Starte danach ggf. neu oder führe `newgrp docker` aus, damit die Docker-Gruppe sofort wirksam wird.
 
-**Hinweis:** Das Script erwartet eine frische Ubuntu-Installation mit Internetzugan
+**Hinweis:** Das Script setzt eine frische Ubuntu-Installation mit Internetzugang voraus.
 
+---
 
 ## 2. Container laden und ausführen
 
-Den Inhalt der **setup-container.sh** in eine Datei kopieren
+Den folgenden Inhalt in eine Datei mit dem Namen **setup-container.sh** kopieren:
 
 ```bash
 nano setup-container.sh
 ```
 
-und anschließend ausführbar machen.
+Anschließend ausführbar machen:
 
 ```bash
 sudo chmod +x setup-container.sh
 ```
 
-Abschließend lässt sich das Script ausführen
+Script ausführen:
+
 ```bash
- ./setup-container.sh 
- ```
+./setup-container.sh
+```
 
-Es wird nun eine docker-compose.yml mit Portainer und NGINX Proxy Manager (NPM) erstellt und und ausgeführt. Im zweiten Schritt wird das Repository [n8n Self-hosted AI starter kit](https://github.com/n8n-io/self-hosted-ai-starter-kit.git) heruntergeladen und mit allen Diensten gestartet.
+Dabei wird eine `docker-compose.yml` mit Portainer und NGINX Proxy Manager (NPM) erstellt und gestartet. Danach wird das Repository [n8n Self-hosted AI Starter Kit](https://github.com/n8n-io/self-hosted-ai-starter-kit.git) heruntergeladen und mit allen Diensten gestartet.
 
-**Hinweis:** NPM wird mit veränderten Ports gestarte damit die Nginx Proxy Manager UI über den Port 80 erreichbar ist.
+**Hinweis:** NPM wird mit angepassten Ports gestartet, sodass die Benutzeroberfläche über Port 80 erreichbar ist. 
 
-## 3. Einrichten NGINX Proxy Manager (Reverse Proxy)
+Ferner beinhaltet die **setup-container.sh** Datei Crediantials, welche unbedingt geändert werrden sollten
 
-Ziel nach erfolgreicher Einrichtung sollte es sein, dass folgende Subdomains die folgenden Dienste ansprechen und darüber erreichbar sind.
+Beispielsweise von:
+```bash
+# n8n Settings
+N8N_HOST=localhost
+N8N_PORT=5678
+N8N_BASIC_AUTH_ACTIVE=true
+N8N_BASIC_AUTH_USER=admin
+N8N_BASIC_AUTH_PASSWORD=admin
 
-| Konfiguration         | Subdomain                 |
-|-----------------------|---------------------------|
-http://portainer:8000   | portainer.deinedomaine.de |
-http://n8n:5678         | n8n.deinedomaine.de       |
-http://npm:81           | npm.deinedomaine.de       |
+# Postgres
+POSTGRES_DB=n8n
+POSTGRES_USER=n8n
+POSTGRES_PASSWORD=n8npassword
 
+```
+zu
+```bash
+# n8n Settings
+N8N_HOST=localhost
+N8N_PORT=5678
+N8N_BASIC_AUTH_ACTIVE=true
+N8N_BASIC_AUTH_USER=admin
+N8N_BASIC_AUTH_PASSWORD=F2LSnK2abTM6raR9Ud
 
-### 3.1. Manuelle Schritte im Nginx Proxy Manager UI
+# Postgres
+POSTGRES_DB=n8n
+POSTGRES_USER=n8ndbuser
+POSTGRES_PASSWORD=27Uwk34QPHen6gKX0N
+```
+---
 
-#### 3.1.1. Öffne Nginx Proxy Manager (NPM):
-- URL: http://< Deine-IP >:80 (Normalzustand wäre Port 81)
-- Default Login:
-    - Benutzer: admin@example.com
-    - Passwort: changeme
-- Nach dem Login Passwort & Mail ändern
+## 3. Einrichten des NGINX Proxy Manager (Reverse Proxy)
+
+Nach erfolgreicher Einrichtung sollten folgende Subdomains auf die jeweiligen Dienste zeigen:
+
+| Dienst-URL              | Subdomain                 |
+|-------------------------|---------------------------|
+| http://portainer:8000   | portainer.deinedomaine.de |
+| http://n8n:5678         | n8n.deinedomaine.de       |
+| http://npm:81           | npm.deinedomaine.de       |
+
+---
+
+### 3.1. Manuelle Schritte in der NGINX Proxy Manager UI
+
+#### 3.1.1. NGINX Proxy Manager öffnen:
+- URL: `http://<Deine-IP>:80` (Standard wäre Port 81)
+- Standard-Zugangsdaten:
+  - Benutzer: `admin@example.com`
+  - Passwort: `changeme`
+- Nach dem Login: E-Mail-Adresse und Passwort ändern
 
 #### 3.1.2. Neuen Proxy Host hinzufügen:
-- Menü: "Proxy Hosts" → "Add Proxy Host"
-Domain Names: deinedomain.de (z. B. n8n.deinedomaine.de)
-- Forward Hostname / IP: n8n oder localhost (wenn n8n im  gleichen Docker-Netzwerk ist)
-- Forward Port: 5678
-- Websockets aktivieren: ✔️ Websockets Support aktivieren
+- Menü: „Proxy Hosts“ → „Add Proxy Host“
+- Domain Names: `deinedomaine.de` (z. B. `n8n.deinedomaine.de`)
+- Forward Hostname / IP: `n8n` oder `localhost` (sofern im gleichen Docker-Netzwerk)
+- Forward Port: `5678`
+- Websockets aktivieren: ✔️
 - Block Common Exploits: ✔️
 
 #### 3.1.3. SSL aktivieren:
-- Tab: SSL
-- SSL Certificate: "Request a new SSL Certificate"
-- Email: Deine Mailadresse
-- Force SSL: ✔️ aktivieren
-- HTTP/2 Support: ✔️ aktivieren
+- Tab: **SSL**
+- SSL-Zertifikat: „Request a new SSL Certificate“
+- E-Mail-Adresse: Deine E-Mail
+- Force SSL: ✔️
+- HTTP/2 Support: ✔️
 - Speichern & starten
 
-#### (Alternative) NPM mit Cloudflare einrichten
-Eine ausführliche Einleitung findet sich im folgenden Beitrag:  
-[HomeLab: Nginx-Proxy-Manager: Setup SSL Certificate with Domain Name in Cloudflare DNS](https://medium.com/@life-is-short-so-enjoy-it/homelab-nginx-proxy-manager-setup-ssl-certificate-with-domain-name-in-cloudflare-dns-732af64ddc0b)
+#### (Alternative) Einrichtung über Cloudflare:
+Eine ausführliche Anleitung findest du hier:  
+[HomeLab: Nginx Proxy Manager mit SSL und Cloudflare DNS](https://medium.com/@life-is-short-so-enjoy-it/homelab-nginx-proxy-manager-setup-ssl-certificate-with-domain-name-in-cloudflare-dns-732af64ddc0b)
 
+---
 
-### 3.2. NPM-Port anpassen und neustarten
-Im nächsten Schritt müssen Sie den Container NPM stoppen. Hierzu müssen Sie sich im Verzeichnes befinden, wo auch die Datei *docker-compose.yml* mit portainer und npm zufinden ist.
+### 3.2. Ports im NPM anpassen und neu starten
+
+Im nächsten Schritt muss der NPM-Container gestoppt werden. Navigiere in das Verzeichnis, in dem sich die Datei `docker-compose.yml` (mit Portainer und NPM) befindet:
 
 ```bash
 docker compose stop
 ```
 
-Die Datei mit *nano* editieren
+Öffne die Datei mit `nano`:
 
 ```bash
 nano docker-compose.yml
 ```
 
-den Port für NPM von 80 in 81 und 8001 in 80 (Normalzustand) abändern und die Datei speichern
+Ändere die Ports von:
 
-```bash
-  nginx-manager:
-    image: jc21/nginx-proxy-manager:latest
-    container_name: nginx-manager
-    restart: always
-    ports:
-      - "8001:80"
-      - "80:81"
-      - "443:443"
-    volumes:
-      - nginx_data:/data
-      - nginx_letsencrypt:/etc/letsencrypt
+```yaml
+  ports:
+    - "81:80"
+    - "80:81"
 ```
 
-Abschließend die beiden Container erneut starten
+zu:
 
-```bash
-docker compose stop -d
+```yaml
+  ports:
+    - "80:80"
+    - "81:81"
+    - "443:443"
 ```
 
+Dann speichere die Datei und starte die Container neu:
 
-## 4. Inbetriebnehmen von n8n
+```bash
+docker compose up -d
+```
 
-n8n sollte nun unter
-- URL: https://n8n.deinedomaine.de (http://< Deine-IP >:5678)
-- Benutzer: admin
-- Passwort: admin
+---
 
-erreichbar sein.
+## 4. Inbetriebnahme von n8n
 
+n8n sollte nun unter folgender Adresse erreichbar sein:
+
+- URL: `https://n8n.deinedomaine.de` (alternativ: `http://<Deine-IP>:5678`)
+- Benutzer: `admin`
+- Passwort: `admin`
